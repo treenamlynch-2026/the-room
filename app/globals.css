@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-shell: #0B1016;
+  --color-canvas: #0E131A;
+  --color-panel: #131A23;
+  --color-card: #161D27;
+  --color-line: #1E2734;
+  --color-line2: #2A3444;
+  --color-ink: #E6E9EE;
+  --color-ink2: #CDD3DC;
+  --color-mute: #9AA4B2;
+  --color-human: #8AB8F5;
+  --color-human-d: #3B7BE0;
+  --color-gpt: #2BB39A;
+  --color-gpt-l: #7FD9C6;
+  --color-cl: #E8A04B;
+  --color-cl-l: #F2C68C;
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html, body { height: 100%; background: var(--color-canvas); color: var(--color-ink); }
+body { font-family: var(--font-sans); }
+
+.md { line-height: 1.6; overflow-wrap: anywhere; }
+.md > * + * { margin-top: 0.6em; }
+.md ul { list-style: disc; padding-left: 1.3em; }
+.md ol { list-style: decimal; padding-left: 1.3em; }
+.md h1, .md h2, .md h3 { font-weight: 600; margin-top: 1em; }
+.md h1 { font-size: 1.25em; } .md h2 { font-size: 1.12em; } .md h3 { font-size: 1em; }
+.md a { color: var(--color-human); text-decoration: underline; }
+.md code { font-family: var(--font-mono); font-size: 0.88em; background: #1C2533; padding: 0.1em 0.35em; border-radius: 4px; }
+.md pre { background: #0B1016; border: 1px solid var(--color-line2); border-radius: 10px; padding: 12px 14px; overflow-x: auto; }
+.md pre code { background: none; padding: 0; }
+.md blockquote { border-left: 3px solid var(--color-line2); padding-left: 0.8em; color: var(--color-mute); }
+.md table { border-collapse: collapse; display: block; overflow-x: auto; }
+.md th, .md td { border: 1px solid var(--color-line2); padding: 4px 8px; }
+
+@keyframes blink { 0%, 80%, 100% { opacity: .25 } 40% { opacity: 1 } }
+.typing span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--color-cl); animation: blink 1.2s infinite; margin-right: 3px; }
+.typing span:nth-child(2) { animation-delay: .2s } .typing span:nth-child(3) { animation-delay: .4s }
+.typing.gpt span { background: var(--color-gpt); }
