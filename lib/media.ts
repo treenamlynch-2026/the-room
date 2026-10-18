@@ -8,7 +8,9 @@ import { openaiClient } from "./keys";
 import type { FileRow } from "./db";
 import type { FileKind, Part } from "./types";
 
-const run = promisify(execFile);
+const exec = promisify(execFile);
+const run = (file: string, args: string[]) => exec(file, args, { timeout: 30_000, maxBuffer: 1024 * 1024, windowsHide: true });
+const INPUT_LIMITS = ["-protocol_whitelist", "file,pipe", "-format_whitelist", "mov,matroska,webm,avi"];
 
 const TEXT_EXT = /\.(md|markdown|txt|csv|tsv|json|ya?ml|xml|html?|css|js|jsx|ts|tsx|py|cs|sql|sh|srt|vtt|ini|toml|log)$/i;
 const IMAGE_MIME = /^image\/(png|jpe?g|gif|webp|bmp|tiff|avif|heic|heif)$/i;
@@ -31,8 +33,8 @@ const FRAME_WIDTH = () => Number(process.env.VIDEO_FRAME_WIDTH) || 768;
 /** Downscale once at upload, cached next to the original, so every later call sends a small WebP. */
 export async function prepareImage(stored: string): Promise<string> {
   const out = stored + ".ctx.webp";
-  const meta = await sharp(stored, { animated: false }).metadata();
-  await sharp(stored, { animated: false }).rotate()
+  const meta = await sharp(stored, { animated: false, limitInputPixels: 40_000_000 }).metadata();
+  await sharp(stored, { animated: false, limitInputPixels: 40_000_000 }).rotate()
     .resize({ width: MAX_EDGE(), height: MAX_EDGE(), fit: "inside", withoutEnlargement: true })
     .webp({ quality: 85 }).toFile(out);
   return `${meta.width}×${meta.height}`;
@@ -42,7 +44,7 @@ const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).p
 
 async function probeDuration(file: string): Promise<number> {
   // ffmpeg prints "Duration: 00:01:23.45" to stderr and exits non-zero without an output file.
-  const r = await run(ffmpegPath!, ["-hide_banner", "-i", file]).catch((e) => e as { stderr: string });
+  const r = await run(ffmpegPath!, ["-hide_banner", ...INPUT_LIMITS, "-i", file]).catch((e) => e as { stderr: string });
   const m = /Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/.exec(r.stderr || "");
   return m ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) : 0;
 }
@@ -59,13 +61,14 @@ export async function prepareVideo(stored: string): Promise<string> {
   fs.mkdirSync(dir, { recursive: true });
   const dur = await probeDuration(stored);
   if (!dur) throw new Error("Could not read video duration");
+  if (dur > 1800) throw new Error("Video exceeds 30 minutes");
 
   const n = Math.max(1, Math.min(VIDEO_FRAMES(), Math.ceil(dur)));
   const frames: { t: number; file: string }[] = [];
   for (let i = 0; i < n; i++) {
     const t = ((i + 0.5) * dur) / n;
     const file = `frame_${String(i + 1).padStart(3, "0")}.jpg`;
-    await run(ffmpegPath, ["-hide_banner", "-loglevel", "error", "-ss", t.toFixed(2), "-i", stored, "-frames:v", "1",
+    await run(ffmpegPath, ["-hide_banner", "-loglevel", "error", "-ss", t.toFixed(2), ...INPUT_LIMITS, "-i", stored, "-frames:v", "1",
       "-vf", `scale=${FRAME_WIDTH()}:-2`, "-q:v", "4", "-y", path.join(dir, file)]);
     if (fs.existsSync(path.join(dir, file))) frames.push({ t, file });
   }
@@ -73,7 +76,7 @@ export async function prepareVideo(stored: string): Promise<string> {
 
   let transcriptNote = "no transcript";
   const audio = path.join(dir, "audio.mp3");
-  const hasAudio = await run(ffmpegPath, ["-hide_banner", "-loglevel", "error", "-i", stored, "-vn", "-ac", "1", "-ar", "16000", "-b:a", "32k", "-y", audio])
+  const hasAudio = await run(ffmpegPath, ["-hide_banner", "-loglevel", "error", ...INPUT_LIMITS, "-i", stored, "-vn", "-ac", "1", "-ar", "16000", "-b:a", "32k", "-y", audio])
     .then(() => fs.existsSync(audio) && fs.statSync(audio).size > 1000).catch(() => false);
   if (!hasAudio) transcriptNote = "no audio track";
   else if (process.env.MOCK_AGENTS === "1") transcriptNote = "transcript skipped (mock mode)";

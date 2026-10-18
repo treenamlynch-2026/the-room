@@ -49,7 +49,7 @@ export function keyInfo(name: KeyName) {
   return {
     set: !!k,
     source: f ? ".env.local" : e ? "OS environment" : "missing",
-    tail: k ? `…${k.slice(-4)}` : null,
+    tail: null, // No credential characters in diagnostics.
     shadowed: !!(f && e && f !== e), // OS env var differs from .env.local (the .env.local value is used)
   };
 }

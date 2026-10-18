@@ -7,4 +7,5 @@ next-env.d.ts
 *.tsbuildinfo
 
 *.log
+.security-test/
 Claude outputs/

@@ -1,5 +1,6 @@
 import { createCanon, createDecision, getMessage, updateMessage } from "./db";
 import type { AgentId, Message } from "./types";
+import { stripCodeDirectives } from "./directive-code";
 
 /**
  * AI save/approve actions, written by the model as directive lines in its reply:
@@ -13,7 +14,7 @@ const NAME: Record<AgentId, string> = { chatgpt: "Iris", claude: "Claude" };
 export function applyDirectives(projectId: string, self: AgentId, msg: Message, trigger: Message, history: Message[], text: string): string {
   const other: AgentId = self === "claude" ? "chatgpt" : "claude";
   const done: string[] = [];
-  let out = text;
+  let out = stripCodeDirectives(text);
 
   out = out.replace(/\[\[CANON:\s*([^\]\n]+?)\s*\]\]\s*\n?([\s\S]*?)\[\[\/CANON\]\]/g, (_, title: string, body: string) => {
     const b = body.trim();

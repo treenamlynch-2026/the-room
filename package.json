@@ -9,7 +9,8 @@
     "build": "next build",
     "start": "next start -H 127.0.0.1",
     "restart": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/restart.ps1",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:security": "node --test tests/security.test.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
@@ -17,7 +18,9 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "busboy": "^1.6.0",
     "ffmpeg-static": "^5.3.0",
+    "mdast-util-from-markdown": "^2.1.0",
     "next": "^16.3.8",
     "openai": "^7.28.0",
     "react": "^19.2.0",
@@ -27,5 +30,8 @@
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "typescript": "^5"
+  },
+  "devDependencies": {
+    "@types/busboy": "^1.5.5"
   }
 }

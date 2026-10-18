@@ -11,7 +11,7 @@ A local, self-hosted chat room where one human directs two AI collaborators at o
 - **Route each message** to Claude, Iris or both (chips or `@claude`, `@iris`, `@both`). Parallel replies never see each other until the next turn.
 - **Cross-review:** one click asks the other AI to review or implement a reply, optionally on its deeper model.
 - **Project Brain:** Canon (rules sent on every call), Decisions, pinned files, per-project model choice. An authority order tells both AIs what wins in a conflict.
-- **Shared approvals:** the human, Claude and Iris can approve messages, save Decisions and add Canon (the AIs do it with `[[APPROVE]]`, `[[DECISION: …]]`, `[[CANON: Title]] … [[/CANON]]` lines). The human can remove anything.
+- **Shared approvals:** the human, Claude and Iris can approve messages, save Decisions and add Canon automatically with plain-text directives. Tags inside fenced, indented or inline Markdown code are removed before parsing. The human can remove anything.
 - **Files:** paste, drop or attach text, images, PDFs and video (frames + transcript).
 - **Thread or Split view**, resizable/collapsible side panels, search, Markdown export, "Copy latest" for moving a round into another chat.
 
@@ -83,6 +83,16 @@ Adding Gemini later: write one more `AgentAdapter` and add its id to `AgentId`.
 - `APP_PASSWORD` is basic protection for a home network. Put real auth and HTTPS in front before exposing it to the internet.
 
 ## Security
+
+Security hardening after the v0.1.0 review:
+
+- Requests must use `127.0.0.1:PORT` or `localhost:PORT` (PORT defaults to 3000). Mutating API requests require a matching `Origin`; JSON endpoints require `application/json`. Uploads use multipart form data. Command-line API clients must also supply the matching Origin header.
+- Automatic saving is preserved by the owner's choice. Directive tags inside Markdown code examples are removed before parsing; plain-text directives still execute automatically. This reduces accidental execution of examples but does not prevent a malicious file from inducing a plain-text directive. Full human approval remains an optional follow-up, not an implemented protection.
+- Uploaded HTML, SVG, PDFs, text, and original files download as attachments. Only server-decoded WebP image previews render inline. File responses use `nosniff`, a sandbox CSP, and `no-store`.
+- Streaming uploads are limited to 32 MiB per file, 64 MiB per request, four files, and one upload/processing job at a time. Upload parsing has a 60-second deadline; each FFmpeg command has a 30-second timeout, video duration is limited to 30 minutes, and image input is limited to 40 megapixels. Failed requests remove their newly created files.
+- Project IDs and upload paths are validated before writing; diagnostics no longer disclose key suffixes. Basic-password comparison uses fixed-size digests and constant-time comparison. HTTP Basic remains local-only; this is not an Internet authentication system.
+
+See `SECURITY-REVIEW.md` for scope, regression checks, and remaining limits.
 
 - Runs on `127.0.0.1` only. Your conversations, uploads and keys stay on your machine (`./data`, `.env.local`), both git-ignored.
 - Messages and files you send go to Anthropic and OpenAI under your own API accounts.
